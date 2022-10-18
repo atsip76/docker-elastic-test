@@ -1,0 +1,26 @@
+cluster.name: "elk-cluster"
+network.host: 0.0.0.0
+#network.bind_host: 0.0.0.0
+
+xpack.license.self_generated.type: basic
+
+xpack.monitoring.collection.enabled: true
+
+xpack.security.enabled: true
+#xpack.security.user: usedesk:usedesk
+xpack.security.transport.ssl.enabled: true
+#xpack.security.transport.ssl.client_authentication: optional
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: elastic-stack-ca.p12
+xpack.security.transport.ssl.truststore.path: elastic-stack-ca.p12
+xpack.security.audit.enabled: true
+xpack.security.authc.api_key.enabled: true
+
+#reindex.remote.whitelist: "172.16.0.43:9200"
+
+path.repo: ["/backup"]
+
+cluster.routing.allocation.balance.index: "0.45f"
+cluster.routing.allocation.balance.shard: "5.15f"
+cluster.routing.allocation.balance.threshold: "0.3f"
+cluster.routing.use_adaptive_replica_selection: true

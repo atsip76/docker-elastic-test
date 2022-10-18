@@ -43,17 +43,28 @@ services:
       - node.name={{.Node.Hostname}}
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
-      - cluster.name=DevOps
-      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
+      - cluster.name=elk-cluster
+#      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
+      - ELASTIC_PASSWORD=usedesk
       - xpack.security.enabled=true
       - xpack.monitoring.collection.enabled=true
       - xpack.security.audit.enabled=true
-      - xpack.license.self_generated.type=trial
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+#      - xpack.license.self_generated.type=trial
       - network.host=0.0.0.0
     networks:
       - elastic
     volumes:
-      - elasticsearch:/usr/share/elasticsearch/data
+      - /data:/usr/share/elasticsearch/data
     deploy:
       mode: 'global'
       endpoint_mode: dnsrr
@@ -83,9 +94,15 @@ services:
     image: kibana:${ELASTIC_VERSION:-7.17.6}
     hostname: "{{.Node.Hostname}}-kibana"
     environment:
+      - xpack.monitoring.ui.container.elasticsearch.enabled=true
+      - csp.strict=true
+      - xpack.encryptedSavedObjects.encryptionKey=Ghtg56pqvbcnthGbnRbyDnskeDhdfThjEdl
+      - status.allowAnonymous=true
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
+#      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
+#      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=usedesk
       - SERVER_NAME="{{.Node.Hostname}}-kibana"
     ports:
       - 5601:5601
@@ -110,16 +127,16 @@ services:
         --strict.perms=false -e
         -E apm-server.rum.enabled=true
         -E setup.kibana.host=kibana:5601
-        -E setup.kibana.username=${ELASTICSEARCH_USERNAME}
-        -E setup.kibana.password=${ELASTICSEARCH_PASSWORD}
+        -E setup.kibana.username=${ELASTICSEARCH_USERNAME:-elastic}
+        -E setup.kibana.password=${ELASTICSEARCH_PASSWORD:-usedesk}
         -E setup.template.settings.index.number_of_replicas=0
         -E apm-server.kibana.enabled=true
         -E apm-server.kibana.host=kibana:5601
-        -E apm-server.kibana.username=${ELASTICSEARCH_USERNAME}
-        -E apm-server.kibana.password=${ELASTICSEARCH_PASSWORD}
+        -E apm-server.kibana.username=${ELASTICSEARCH_USERNAME:-elastic}
+        -E apm-server.kibana.password=${ELASTICSEARCH_PASSWORD:-usedesk}
         -E output.elasticsearch.hosts=["elasticsearch:9200"]
-        -E output.elasticsearch.username=${ELASTICSEARCH_USERNAME}
-        -E output.elasticsearch.password=${ELASTICSEARCH_PASSWORD}
+        -E output.elasticsearch.username=${ELASTICSEARCH_USERNAME:-elastic}
+        -E output.elasticsearch.password=${ELASTICSEARCH_PASSWORD:-usedesk}
         -E xpack.monitoring.enabled=true
     deploy:
       labels:
