@@ -37,14 +37,14 @@ services:
       replicas: 2
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-7.9.1}
+    image: elasticsearch:${ELASTIC_VERSION:-7.17.6}
     environment:
       # https://github.com/docker/swarmkit/issues/1951
       - node.name={{.Node.Hostname}}
       - discovery.seed_hosts=elasticsearch
-      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-node1}
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
       - cluster.name=DevOps
-      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
       - xpack.security.enabled=true
       - xpack.monitoring.collection.enabled=true
       - xpack.security.audit.enabled=true
@@ -65,12 +65,12 @@ services:
         - com.df.srcPort=9200
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION:-7.9.1}
+    image: logstash:${ELASTIC_VERSION:-7.17.6}
     hostname: "{{.Node.Hostname}}-logstash"
     environment:
       - XPACK_MONITORING_ELASTICSEARCH_URL=http://elasticsearch:9200
       - XPACK_MONITORING_ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
     ports:
       - "12201:12201/udp"
     networks:
@@ -80,12 +80,12 @@ services:
         target: /usr/share/logstash/pipeline/logstash.conf
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-7.9.1}
+    image: kibana:${ELASTIC_VERSION:-7.17.6}
     hostname: "{{.Node.Hostname}}-kibana"
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
       - SERVER_NAME="{{.Node.Hostname}}-kibana"
     networks:
       - elastic
@@ -100,7 +100,7 @@ services:
         - com.df.srcPort=80
   
   apm-server:
-    image: docker.elastic.co/apm/apm-server:${ELASTIC_VERSION:-7.9.1}
+    image: elastic/apm-server:${ELASTIC_VERSION:-7.17.6}
     hostname: "{{.Node.Hostname}}-apm-server"
     networks:
       - elastic
