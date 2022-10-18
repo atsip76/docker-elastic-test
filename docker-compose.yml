@@ -87,6 +87,8 @@ services:
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
       - SERVER_NAME="{{.Node.Hostname}}-kibana"
+    ports:
+      - 5601:5601
     networks:
       - elastic
     volumes:
