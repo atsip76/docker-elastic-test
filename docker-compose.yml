@@ -96,6 +96,12 @@ services:
       resources:
         limits:
           memory: 8G
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
 
   master2:
     image: atsip/elkdocker:usedesk
@@ -133,6 +139,12 @@ services:
       resources:
         limits:
           memory: 8G
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
       
   master3:
     image: atsip/elkdocker:usedesk
@@ -170,6 +182,12 @@ services:
       resources:
         limits:
           memory: 8G
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
 
   elasticsearch1:
     image: atsip/elkdocker:usedesk
@@ -390,7 +408,7 @@ services:
     image: atsip/elkdocker:usedesk
     hostname: data6
     environment:
-      - node.name=data6
+      - node.name={{.Node.Hostname}}-data6
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
       - cluster.name=elk-cluster
