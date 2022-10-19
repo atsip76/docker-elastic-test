@@ -1,7 +1,31 @@
 version: "3.8"
 
-# 10 Things to Consider When Planning Your Elasticsearch Project: https://ecmarchitect.com/archives/2015/07/27/4031
-# Using Apache JMeter to Test Elasticsearch: https://ecmarchitect.com/archives/2014/09/02/3915
+x-default-logs: &default-opts
+  logging:
+    options:
+      max-size: "1m"
+
+x-master-opts: &master
+  ES_JAVA_OPTS: "-Xmx4g -Xms4g -XX:+UnlockExperimentalVMOptions"
+  discovery.seed_resolver.timeout: 60s
+  discovery.seed_hosts: master1,master2,master3
+  cluster.initial_master_nodes: master1,master2,master3
+  cluster.name: "es-cluster"
+  network.host: 0.0.0.0
+  node.master: "true"
+  node.data: "false"
+  node.ingest: "false"
+
+x-data-opts: &data
+  ES_JAVA_OPTS: "-Xmx32g -Xms32g -XX:MaxDirectMemorySize=16g -XX:+UnlockExperimentalVMOptions"
+  discovery.seed_resolver.timeout: 60s
+  discovery.seed_hosts: master1,master2,master3
+  cluster.initial_master_nodes: master1,master2,master3
+  cluster.name: "es-cluster"
+  network.host: 0.0.0.0
+  node.master: "false"
+  node.data: "true"
+  node.ingest: "false"
 
 services:
 
@@ -36,15 +60,14 @@ services:
     deploy:
       replicas: 2
 
-  elasticsearch:
+  master1:
     image: atsip/elkdocker:usedesk
+    hostname: master1
     environment:
-      # https://github.com/docker/swarmkit/issues/1951
-      - node.name={{.Node.Hostname}}
+      - node.name=master1
       - discovery.seed_hosts=elasticsearch
       - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
       - cluster.name=elk-cluster
-#      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
       - ELASTIC_PASSWORD=usedesk
       - xpack.security.enabled=true
       - xpack.monitoring.collection.enabled=true
@@ -59,14 +82,345 @@ services:
       - cluster.routing.allocation.balance.shard=5.15f
       - cluster.routing.allocation.balance.threshold=0.3f
       - cluster.routing.use_adaptive_replica_selection=true
-#      - xpack.license.self_generated.type=trial
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - esmaster1:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.master1 ==  true]
+      endpoint_mode: dnsrr
+      mode: 'replicated'
+      replicas: 1
+      resources:
+        limits:
+          memory: 8G
+
+  master2:
+    image: atsip/elkdocker:usedesk
+    hostname: master2
+    environment:
+      - node.name=master2
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - esmaster2:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.master2 ==  true]
+      endpoint_mode: dnsrr
+      mode: 'replicated'
+      replicas: 1
+      resources:
+        limits:
+          memory: 8G
+      
+  master3:
+    image: atsip/elkdocker:usedesk
+    hostname: master3
+    environment:
+      - node.name=master3
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - esmaster3:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.master3 ==  true]
+      endpoint_mode: dnsrr
+      mode: 'replicated'
+      replicas: 1
+      resources:
+        limits:
+          memory: 8G
+
+  elasticsearch1:
+    image: atsip/elkdocker:usedesk
+    hostname: data1
+    environment:
+      - node.name=data1
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
       - network.host=0.0.0.0
     networks:
       - elastic
     volumes:
       - /data:/usr/share/elasticsearch/data
     deploy:
-      mode: 'global'
+      placement:
+        constraints: [node.labels.data1 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
+      endpoint_mode: dnsrr
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
+
+  elasticsearch2:
+    image: atsip/elkdocker:usedesk
+    hostname: data2
+    environment:
+      - node.name=data2
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - /data:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.data2 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
+      endpoint_mode: dnsrr
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
+  
+  elasticsearch3:
+    image: atsip/elkdocker:usedesk
+    hostname: data3
+    environment:
+      - node.name=data3
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - /data:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.data3 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
+      endpoint_mode: dnsrr
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
+
+  elasticsearch4:
+    image: atsip/elkdocker:usedesk
+    hostname: data4
+    environment:
+      - node.name=data1
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - /data:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.data4 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
+      endpoint_mode: dnsrr
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
+
+  elasticsearch5:
+    image: atsip/elkdocker:usedesk
+    hostname: data5
+    environment:
+      - node.name=data5
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - /data:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.data5 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
+      endpoint_mode: dnsrr
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/
+        - com.df.port=9200
+        - com.df.srcPort=9200
+
+  elasticsearch6:
+    image: atsip/elkdocker:usedesk
+    hostname: data6
+    environment:
+      - node.name=data6
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=${INITIAL_MASTER_NODES:-elastic-master01}
+      - cluster.name=elk-cluster
+      - ELASTIC_PASSWORD=usedesk
+      - xpack.security.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.audit.enabled=true
+      - xpack.license.self_generated.type=basic
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=elastic-stack-ca.p12
+      - xpack.security.transport.ssl.truststore.path=elastic-stack-ca.p12
+      - xpack.security.authc.api_key.enabled=true
+      - cluster.routing.allocation.balance.index=0.45f
+      - cluster.routing.allocation.balance.shard=5.15f
+      - cluster.routing.allocation.balance.threshold=0.3f
+      - cluster.routing.use_adaptive_replica_selection=true
+      - network.host=0.0.0.0
+    networks:
+      - elastic
+    volumes:
+      - /data:/usr/share/elasticsearch/data
+    deploy:
+      placement:
+        constraints: [node.labels.data6 ==  true]
+      mode: 'replicated'
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 64G
       endpoint_mode: dnsrr
       labels:
         - com.df.notify=true
@@ -99,8 +453,6 @@ services:
       - xpack.encryptedSavedObjects.encryptionKey=Ghtg56pqvbcnthGbnRbyDnskeDhdfThjEdl
       - status.allowAnonymous=true
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-#      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-#      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-usedesk}
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=usedesk
       - SERVER_NAME="{{.Node.Hostname}}-kibana"
@@ -151,8 +503,10 @@ networks:
       external: true
 
 volumes:
-  elasticsearch:
   kibana:
+  esmaster1:
+  esmaster2:
+  esmaster3:
 
 configs:
   ls_config:
