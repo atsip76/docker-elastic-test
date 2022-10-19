@@ -37,7 +37,7 @@ services:
       replicas: 2
 
   elasticsearch:
-    image: elasticsearch:${ELASTIC_VERSION:-7.17.6}
+    image: atsip/elkdocker:usedesk
     environment:
       # https://github.com/docker/swarmkit/issues/1951
       - node.name={{.Node.Hostname}}
